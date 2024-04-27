@@ -18,6 +18,9 @@ def loftrGenerate(img0_pth, img1_pth):
       raise ValueError("Wrong image_type is given.")
     matcher = matcher.eval().cuda()
 
+    img0_origin = cv2.imread(image_pair[0])
+    img1_origin = cv2.imread(image_pair[1])
+    
     img0_raw = cv2.imread(image_pair[0], cv2.IMREAD_GRAYSCALE)
     img1_raw = cv2.imread(image_pair[1], cv2.IMREAD_GRAYSCALE)
     img0_raw = cv2.resize(img0_raw, (640, 480))
@@ -87,8 +90,8 @@ def loftrGenerate(img0_pth, img1_pth):
     height = src_bottom_right[1] - src_top_left[1]
     height = int(height)
     width = int(width)
-    result_img0 = img0_raw.copy()
-    target_image2 = img1_raw
+    result_img0 = img0_origin
+    target_image2 = img1_origin
     for y in range(height):
         for x in range(width):
             src_x, src_y = src_top_left[0] + x, src_top_left[1] + y
