@@ -4,11 +4,14 @@ import torch
 import cv2
 import numpy as np
 import matplotlib.cm as cm
+from util import *
 
 from src.utils.plotting import make_matching_figure
 from src.loftr import LoFTR, default_cfg
+
 def loftrGenerate(img0_pth, img1_pth):
-    image_pair = [img1_pth, img0_pth]
+    copy_file(img0_pth,"results/")
+    image_pair = [img0_pth, img1_pth]
     matcher = LoFTR(config=default_cfg)
     if image_type == 'indoor':
       matcher.load_state_dict(torch.load("weights/indoor_ds.ckpt")['state_dict'])
@@ -20,7 +23,7 @@ def loftrGenerate(img0_pth, img1_pth):
 
     img0_origin = cv2.imread(image_pair[0])
     img1_origin = cv2.imread(image_pair[1])
-    
+
     img0_raw = cv2.imread(image_pair[0], cv2.IMREAD_GRAYSCALE)
     img1_raw = cv2.imread(image_pair[1], cv2.IMREAD_GRAYSCALE)
     img0_raw = cv2.resize(img0_raw, (640, 480))
@@ -37,24 +40,19 @@ def loftrGenerate(img0_pth, img1_pth):
         mkpts1 = batch['mkpts1_f'].cpu().numpy()
         mconf = batch['mconf'].cpu().numpy()
 
-    if (len(mkpts0))
+    bloackregion = block_region(mkpts0)
+    makeBlackImg(bloackregion[0],bloackregion[1],bloackregion[2],bloackregion[3],returnFilename(img0_pth))
+    # addWhiteBlock(bloackregion[0],bloackregion[1],bloackregion[2],bloackregion[3],"image0","whiteBlock")
 
-    # Draw
-    color = cm.jet(mconf, alpha=0.7)
-    text = [
-        'LoFTR',
-        'Matches: {}'.format(len(mkpts0)),
-    ]
-    fig = make_matching_figure(img0_raw, img1_raw, mkpts0, mkpts1, color, mkpts0, mkpts1, text)
 
     H, status = cv2.findHomography(mkpts0, mkpts1, cv2.RANSAC)
 
     # find the coordinate of the pos in img2 corespond to img1 blocked area
 
-    left_up = np.array([[260], [277], [1]])
-    left_down = np.array([[260], [360], [1]])
-    right_up = np.array([[480], [277], [1]])
-    right_down = np.array([[480], [360], [1]])
+    left_up = np.array([bloackregion[0], bloackregion[1], [1]])
+    left_down = np.array([bloackregion[0], bloackregion[3], [1]])
+    right_up = np.array([bloackregion[2], bloackregion[1], [1]])
+    right_down = np.array([bloackregion[2], bloackregion[3], [1]])
 
     # 使用矩阵乘法进行变换
     transformed_left_up = np.dot(H, left_up)
@@ -99,7 +97,7 @@ def loftrGenerate(img0_pth, img1_pth):
 
             result_img0[dst_y, dst_x] = target_image2[src_y, src_x]
 
-    filename = "transformed_image.png"  # Replace with your preferred name and format
+    filename = "images/" + returnFilename(img0_pth)+".jpg"  # 貼上後的圖
 
     # Save the image using OpenCV's imwrite function
     cv2.imwrite(filename, result_img0)
